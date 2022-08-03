@@ -1,52 +1,31 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from 'src/shared/typeorm';
 import { UserDto } from 'src/users/dtos/User.dto';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UsersService {
-    users = [
-        {
-            id: 1,
-            email: 'arnold.sulana@gmail.com',
-            name: "Arnold Sulana"
-        },
-        {
-            id: 2,
-            email: 'dane.nunez@gmail.com',
-            name: "Pearl Nunez"
-        },
-        {
-            id: 3,
-            email: 'alwilson.tadeo@gmail.com',
-            name: "Al Wilson"
-        }
-    ];
-
-    findUserById(id: number) {
-        return this.users.find((user) => user.id === id)
-    }
-
-    displayUsers() {
-        return this.users;
-    }
+    constructor(@InjectRepository(User) private readonly userRepository: Repository<User>) {}
 
     createUser(userDto: UserDto) {
-        this.users.push(userDto);
+        const newUser = this.userRepository.create(userDto)
+        return this.userRepository.save(newUser)
+    }
+
+    findUserById(id: number): Promise<User | null> {
+        return this.userRepository.findOneBy({id});
+    }
+
+    displayUsers(): Promise<User[]> {
+        return this.userRepository.find();
     }
 
     editUser(id: number, userDto: UserDto) {
-        var findIndex = this.findUserIndex(id)
-        if (findIndex < 0) return false
-        this.users[findIndex].email = userDto.email
-        this.users[findIndex].name = userDto.name
-        return true
+        return this.userRepository.update(id, userDto)
     }
 
-    removeUser(id: number) {
-        var findIndex = this.findUserIndex(id)
-        this.users.splice(findIndex, 1)
-    }
-
-    private findUserIndex(id: number) {
-        return this.users.findIndex((obj) => obj.id === id)
+    async removeUser(id: number): Promise<void> {
+        await this.userRepository.delete(id);
     }
 }
